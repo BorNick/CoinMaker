@@ -18,6 +18,11 @@ public class Block {
         lastId = BigInteger.ZERO;
     }
     
+    public Block(BigInteger lastId){
+        transactions = new HashMap<BigInteger, Transaction>();
+        this.lastId = lastId;
+    }
+    
     public void addTransaction(Transaction transaction){
         lastId = lastId.add(BigInteger.ONE);
         transactions.put(lastId, transaction);
@@ -66,13 +71,12 @@ public class Block {
         return transactions;
     }
     
+    public void setLastId(BigInteger lastId){
+        this.lastId = lastId;
+    }
+    
     public boolean checkPreviousHash(Block prevBlock)
     {
         return Arrays.equals(prevBlock.prevHash, this.prevHash);
     }
-    
-    //TODO CheckBlock in BlockChain
-    //Node
-    //Unit tests BlockChain
-    //Commands: balance + transfer money
 }

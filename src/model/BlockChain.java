@@ -1,6 +1,8 @@
 package model;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
@@ -13,9 +15,16 @@ public class BlockChain {
     LinkedList<Block> blocks;
     int zerosRule;
 
-    public BlockChain() {
+    public BlockChain(int zerosRule) {
         blocks = new LinkedList<Block>();
         this.zerosRule = zerosRule;
+    }
+    
+    public BlockChain(byte[] data) throws Exception {
+        BlockChain buf = (BlockChain)Serializer.deserialize(data);
+        this.zerosRule = buf.zerosRule;
+        this.blocks = buf.blocks;
+        
     }
 
     public void addBlock(Block newBlock) {
@@ -38,23 +47,43 @@ public class BlockChain {
         //checking source transactions correctness
         for(Entry<BigInteger, Transaction> entry:newBlock.getTransactions().entrySet()){
             Transaction checkTr = entry.getValue();
-            ListIterator<BigInteger> trIter = checkTr.getSourceIds().listIterator();
+            //checking sign
+            if(!checkTr.checkSign()){
+                return false;
+            }
+            ListIterator<BigInteger> sIdsIter = checkTr.getSourceIds().listIterator();
             BigInteger hasMoney = BigInteger.ZERO;
-            while(trIter.hasNext()){
-                BigInteger trNum = trIter.next();
+            while(sIdsIter.hasNext()){
+                BigInteger trNum = sIdsIter.next();
                 //checking existance
+                boolean found = false;
                 if(newBlock.getTransactions().containsKey(trNum)){
-                    //checking sign and amount of money
+                    found  = true;
+                    //checking amount of money
                     Transaction t = newBlock.getTransactions().get(trNum);
-                    if(checkTr.checkSign(t.getPublicKey())){
+                    if(checkTr.getSenderPK().equals(t.getReceiverPK())){
                         hasMoney = hasMoney.add(t.getPay());
-                    }else{
-                        //TODO case of referring to the same person's transaction
+                    }else if(checkTr.getSenderPK().equals(t.getSenderPK())){
+                        hasMoney = hasMoney.add(t.getLeft());
+                    }
+                } else {
+                    ListIterator<Block> blockIter = blocks.listIterator(blocks.size() - 1);
+                    while (blockIter.hasPrevious()) {
+                        //same as in newBlock
+                        Block curBlock = blockIter.previous();
+                        if (curBlock.getTransactions().containsKey(trNum)) {
+                            found = true;
+                            Transaction t = curBlock.getTransactions().get(trNum);
+                            if (checkTr.getSenderPK().equals(t.getReceiverPK())) {
+                                hasMoney = hasMoney.add(t.getPay());
+                            } else if (checkTr.getSenderPK().equals(t.getSenderPK())) {
+                                hasMoney = hasMoney.add(t.getLeft());
+                            }
+                        }
                     }
                 }
-                ListIterator blockIter = blocks.listIterator(blocks.size() - 1);
-                while(blockIter.hasPrevious()){
-                    //TODO same as in newBlock
+                if(!found){
+                    return false;
                 }
                 //double spending check
                 for(Entry<BigInteger, Transaction> e:newBlock.getTransactions().entrySet()){
@@ -62,17 +91,32 @@ public class BlockChain {
                     ListIterator<BigInteger> numIter = t.getSourceIds().listIterator();
                     while(numIter.hasNext()){
                         if(numIter.next().equals(trNum)){
-                            //2 cases: referring to the same person's transaction and reffering to transaction for this person
+                            if(checkTr.getSenderPK().equals(t.getSenderPK())){
+                                return false;
+                            }
                         }
                     }
                 }
+            }
+            if(hasMoney.compareTo(checkTr.getLeft().add(checkTr.getPay())) < 0){
+                return false;
             }
         }
         return true;
     }
     
-    public byte[] toByteArray(){
-        //TODO
-        return null;
+    public BigInteger getLastId(){
+        Block lastBlock = blocks.getLast();
+        BigInteger max = BigInteger.ZERO;
+        for(BigInteger id:lastBlock.getTransactions().keySet()){
+            if(id.compareTo(max) > 0){
+                max = id;
+            }
+        }
+        return max;
+    }
+    
+    public byte[] toByteArray() throws IOException{
+        return Serializer.serialize(this);
     }
 }
