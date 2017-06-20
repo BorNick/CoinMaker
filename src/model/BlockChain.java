@@ -3,6 +3,7 @@ package model;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
@@ -10,7 +11,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map.Entry;
 
-public class BlockChain {
+public class BlockChain implements Serializable{
 
     LinkedList<Block> blocks;
     int zerosRule;
@@ -31,13 +32,13 @@ public class BlockChain {
         blocks.add(newBlock);
     }
 
-    public boolean checkBlock(Block newBlock) throws NoSuchAlgorithmException, IOException, GeneralSecurityException {
+    public boolean checkBlock(Block newBlock) throws Exception{
         //checking number of nulls
         int numOfZeros = 0;
         byte[] hash = newBlock.hash();
         for (int i = 0; i <= zerosRule / 8; i++) {
             for (int j = 0; j < (i == zerosRule / 8 ? zerosRule % 8 : 8); j++) {
-                if ((hash[hash.length - i] & (1 << j)) == 0) {
+                if ((hash[hash.length - i - 1] & (1 << j)) == 0) {
                     numOfZeros++;
                 }
             }
@@ -67,7 +68,7 @@ public class BlockChain {
                         hasMoney = hasMoney.add(t.getLeft());
                     }
                 } else {
-                    ListIterator<Block> blockIter = blocks.listIterator(blocks.size() - 1);
+                    ListIterator<Block> blockIter = blocks.listIterator(blocks.size());
                     while (blockIter.hasPrevious()) {
                         //same as in newBlock
                         Block curBlock = blockIter.previous();
@@ -86,13 +87,15 @@ public class BlockChain {
                     return false;
                 }
                 //double spending check
-                for(Entry<BigInteger, Transaction> e:newBlock.getTransactions().entrySet()){
+                for (Entry<BigInteger, Transaction> e : newBlock.getTransactions().entrySet()) {
                     Transaction t = e.getValue();
                     ListIterator<BigInteger> numIter = t.getSourceIds().listIterator();
-                    while(numIter.hasNext()){
-                        if(numIter.next().equals(trNum)){
-                            if(checkTr.getSenderPK().equals(t.getSenderPK())){
-                                return false;
+                    if (!e.getKey().equals(entry.getKey())) {
+                        while (numIter.hasNext()) {
+                            if (numIter.next().equals(trNum)) {
+                                if (checkTr.getSenderPK().equals(t.getSenderPK())) {
+                                    return false;
+                                }
                             }
                         }
                     }

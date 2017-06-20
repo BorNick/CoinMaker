@@ -7,20 +7,23 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
-public class Block {
+public class Block implements Serializable{
     private byte[] prevHash;
-    public byte[] nonce;
+    public byte[] nonce = new byte[30];
     private HashMap<BigInteger, Transaction> transactions;
     private BigInteger lastId;
     
-    public Block(){
+    public Block(byte[] prevHash){
         transactions = new HashMap<BigInteger, Transaction>();
         lastId = BigInteger.ZERO;
+        this.prevHash = prevHash;
+        
     }
     
-    public Block(BigInteger lastId){
+    public Block(byte[] prevHash, BigInteger lastId){
         transactions = new HashMap<BigInteger, Transaction>();
         this.lastId = lastId;
+        this.prevHash = prevHash;
     }
     
     public void addTransaction(Transaction transaction){
@@ -28,7 +31,7 @@ public class Block {
         transactions.put(lastId, transaction);
     }
     
-    public byte[] hash() throws NoSuchAlgorithmException, IOException{
+    public byte[] hash() throws Exception{
         MessageDigest digest = MessageDigest.getInstance("SHA1");
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(byteOut);
@@ -49,7 +52,7 @@ public class Block {
             hash = this.hash();
             for (int i = 0; i <= zerosRule / 8; i++) {
                 for (int j = 0; j < (i == zerosRule / 8? zerosRule % 8: 8); j++) {
-                    if ((hash[hash.length - i] & (1 << j)) == 0) {
+                    if ((hash[hash.length - i - 1] & (1 << j)) == 0) {
                         numOfZeroes++;
                     }
                 }
@@ -75,8 +78,41 @@ public class Block {
         this.lastId = lastId;
     }
     
-    public boolean checkPreviousHash(Block prevBlock)
+    public boolean checkPreviousHash(Block prevBlock) throws Exception
     {
-        return Arrays.equals(prevBlock.prevHash, this.prevHash);
+        return Arrays.equals(prevBlock.hash(), this.prevHash);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof Block) {
+            Block m = (Block) o;
+            if (transactions.equals(m.transactions) && lastId.equals(m.lastId)) {
+                if (prevHash.length != m.prevHash.length) {
+                    return false;
+                }
+                if (nonce.length != m.nonce.length) {
+                    return false;
+                }
+                for (int i = 0; i < prevHash.length; i++) {
+                    if (prevHash[i] != m.prevHash[i]) {
+                        return false;
+                    }
+                }
+                for (int i = 0; i < nonce.length; i++) {
+                    if (nonce[i] != m.nonce[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 }

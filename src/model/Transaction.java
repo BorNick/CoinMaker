@@ -3,12 +3,13 @@ package model;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.*;
 import java.util.LinkedList;
 //import java.security.spec.X509EncodedKeySpec;
 
-public class Transaction {
+public class Transaction implements Serializable{
 
     private LinkedList<BigInteger> entryIds;
     private BigInteger left;
@@ -104,5 +105,30 @@ public class Transaction {
     
     public byte[] toByteArray() throws IOException{
         return Serializer.serialize(this);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof Transaction) {
+            Transaction m = (Transaction) o;
+            if (entryIds.equals(m.entryIds) && left.equals(m.left) && pay.equals(m.pay) && senderPK.equals(m.senderPK) && receiverPK.equals(m.receiverPK)) {
+                if (sign.length != m.sign.length) {
+                    return false;
+                }
+                for (int i = 0; i < sign.length; i++) {
+                    if (sign[i] != m.sign[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 }
