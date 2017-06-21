@@ -1,14 +1,11 @@
 package model;
 
 import java.math.BigInteger;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.LinkedList;
 import org.junit.After;
@@ -65,19 +62,6 @@ public class BlockTest {
         if(instance.getTransactions().isEmpty())
             fail();
     }
-
-    /**
-     * Test of hash method, of class Block.
-     */
-    /*@Test
-    public void testHash() throws Exception {
-        System.out.println("hash");
-        byte[] prevHash = new byte[256];
-        Block instance = new Block(prevHash);
-        byte[] expResult = null;
-        byte[] result = instance.hash();
-        //assertArrayEquals(expResult, result);
-    }*/
 
     /**
      * Test of mine method, of class Block.

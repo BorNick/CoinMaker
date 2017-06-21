@@ -1,12 +1,10 @@
 package model;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map.Entry;
@@ -32,7 +30,7 @@ public class BlockChain implements Serializable{
         blocks.add(newBlock);
     }
 
-    public boolean checkBlock(Block newBlock) throws Exception{
+    public boolean checkBlock(Block newBlock, BigInteger maxReward) throws Exception{
         //checking number of nulls
         int numOfZeros = 0;
         byte[] hash = newBlock.hash();
@@ -47,6 +45,13 @@ public class BlockChain implements Serializable{
             return false;
         //checking source transactions correctness
         for(Entry<BigInteger, Transaction> entry:newBlock.getTransactions().entrySet()){
+            //for miner transaction
+            if(entry.getKey().equals(newBlock.getLastId())){
+                if(entry.getValue().getPay().compareTo(maxReward) > 0 || !entry.getValue().getLeft().equals(BigInteger.ZERO)){
+                    return false;
+                }
+                continue;
+            }
             Transaction checkTr = entry.getValue();
             //checking sign
             if(!checkTr.checkSign()){
@@ -121,5 +126,57 @@ public class BlockChain implements Serializable{
     
     public byte[] toByteArray() throws IOException{
         return Serializer.serialize(this);
+    }
+    
+    public BigInteger getBalance(PublicKey pk, LinkedList<BigInteger> activeIds){
+        HashMap<BigInteger, Transaction> getTr = new HashMap<BigInteger, Transaction>();
+        HashMap<BigInteger, Transaction> giveTr = new HashMap<BigInteger, Transaction>();
+        ListIterator<Block> li = blocks.listIterator();
+        while(li.hasNext()){
+            for(Entry<BigInteger, Transaction> e:li.next().getTransactions().entrySet()){
+                if(e.getValue().getSenderPK().equals(pk)){
+                    if(!e.getValue().getLeft().equals(BigInteger.ZERO)){
+                        giveTr.put(e.getKey(), e.getValue());
+                    }
+                    ListIterator<BigInteger> sourceIdsIter = e.getValue().getSourceIds().listIterator();
+                    while(sourceIdsIter.hasNext()){
+                        BigInteger id = sourceIdsIter.next();
+                        if(getTr.containsKey(id)){
+                            getTr.remove(id);
+                        }
+                        if(giveTr.containsKey(id)){
+                            giveTr.remove(id);
+                        }
+                    }
+                }
+                if(e.getValue().getReceiverPK().equals(pk)){
+                    getTr.put(e.getKey(), e.getValue());
+                    ListIterator<BigInteger> sourceIdsIter = e.getValue().getSourceIds().listIterator();
+                    while(sourceIdsIter.hasNext()){
+                        BigInteger id = sourceIdsIter.next();
+                        if(getTr.containsKey(id)){
+                            getTr.remove(id);
+                        }
+                        if(giveTr.containsKey(id)){
+                            giveTr.remove(id);
+                        }
+                    }
+                }
+            }
+        }
+        BigInteger sum = BigInteger.ZERO;
+        for(Entry<BigInteger, Transaction> e: giveTr.entrySet()){
+            sum = sum.add(e.getValue().getLeft());
+            activeIds.add(e.getKey());
+        }
+        for(Entry<BigInteger, Transaction> e: getTr.entrySet()){
+            sum = sum.add(e.getValue().getPay());
+            activeIds.add(e.getKey());
+        }
+        return sum;
+    }
+    
+    public LinkedList<Block> getBlocks(){
+        return blocks;
     }
 }

@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.security.*;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Random;
 
 public class Block implements Serializable{
@@ -78,6 +79,10 @@ public class Block implements Serializable{
         this.lastId = lastId;
     }
     
+    public BigInteger getLastId(){
+        return lastId;
+    }
+    
     public boolean checkPreviousHash(Block prevBlock) throws Exception
     {
         return Arrays.equals(prevBlock.hash(), this.prevHash);
@@ -114,5 +119,10 @@ public class Block implements Serializable{
         } else {
             return false;
         }
+    }
+    
+    public void addMinerTransaction(BigInteger pay, PublicKey receiverPK, PrivateKey receiverSK) throws Exception{
+        Transaction t = new Transaction(new LinkedList(), BigInteger.ZERO, pay, receiverPK, receiverPK, receiverSK);
+        addTransaction(t);
     }
 }
