@@ -1,40 +1,39 @@
 package connection;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import model.Block;
 
-public class ClientNode {
+public class ClientNode extends Thread {
 
-    static class clientSendingThread extends Thread {
+    public Socket myClientSocket;
+    Block block;
 
-        public Socket myClientSocket;
-        private boolean ClientOn = true;
+    public ClientNode(String ip, int port, Block block) throws IOException {
+        myClientSocket = new Socket(ip, port);
+        this.block = block;
+    }
 
-        public clientSendingThread(Socket s) {
-            myClientSocket = s;
+    @Override
+    public void run() {
+
+        OutputStream out;
+        try {
+            out = myClientSocket.getOutputStream();
+            byte[] byteBlock = block.toByteArray();
+            byte[] message = new byte[byteBlock.length + 1];
+            message[0] = 0;
+            System.arraycopy(byteBlock, 0, message, 1, byteBlock.length);
+            out.write(message);
+        } catch (IOException ex) {
+            Logger.getLogger(ClientNode.class.getName()).log(Level.SEVERE, null, ex);
         }
-
-        public void run() {
-            PrintWriter out = null;
-
-            try {
-                out = new PrintWriter(new OutputStreamWriter(myClientSocket.getOutputStream()));
-                Scanner scanner = new Scanner(System.in);
-
-                while (ClientOn) {
-                    String s = scanner.nextLine();
-                    out.println(s);
-                    out.flush();
-                }
-            } catch (IOException e) {
-                System.out.println("IOException");
-            }
-            out.close();
-        }
-
     }
 
 }

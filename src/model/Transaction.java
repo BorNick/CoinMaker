@@ -9,7 +9,7 @@ import java.security.*;
 import java.util.LinkedList;
 //import java.security.spec.X509EncodedKeySpec;
 
-public class Transaction implements Serializable{
+public class Transaction implements Serializable {
 
     private LinkedList<BigInteger> entryIds;
     private BigInteger left;
@@ -26,9 +26,14 @@ public class Transaction implements Serializable{
         this.receiverPK = receiverPK;
         this.sign = sign(privateKey);
     }
-    
-    public Transaction(byte[] data) throws Exception{
-        Transaction buf = (Transaction)Serializer.deserialize(data);
+
+    public String toString() {
+        String string = "Money left: " + left.toString() + "\nMoney paid: " + pay.toString() + "\nReceiver public key:\n" + receiverPK.toString();
+        return string;
+    }
+
+    public Transaction(byte[] data) throws Exception {
+        Transaction buf = (Transaction) Serializer.deserialize(data);
         this.entryIds = buf.entryIds;
         this.left = buf.left;
         this.pay = buf.pay;
@@ -68,7 +73,7 @@ public class Transaction implements Serializable{
     public BigInteger getPay() {
         return pay;
     }
-    
+
     public PublicKey getSenderPK() {
         return senderPK;
     }
@@ -80,7 +85,7 @@ public class Transaction implements Serializable{
     public byte[] getSign() {
         return sign;
     }
-    
+
     public byte[] toBAForSign() throws IOException {
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(byteOut);
@@ -102,11 +107,11 @@ public class Transaction implements Serializable{
         System.arraycopy(arrRPK, 0, data, arrEIds.length + arrLeft.length + arrPay.length + arrSPK.length, arrRPK.length);
         return data;
     }
-    
-    public byte[] toByteArray() throws IOException{
+
+    public byte[] toByteArray() throws IOException {
         return Serializer.serialize(this);
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (o == this) {

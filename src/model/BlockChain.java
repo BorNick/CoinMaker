@@ -1,5 +1,7 @@
 package model;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -9,7 +11,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map.Entry;
 
-public class BlockChain implements Serializable{
+public class BlockChain implements Serializable {
 
     LinkedList<Block> blocks;
     int zerosRule;
@@ -18,19 +20,20 @@ public class BlockChain implements Serializable{
         blocks = new LinkedList<Block>();
         this.zerosRule = zerosRule;
     }
-    
+
     public BlockChain(byte[] data) throws Exception {
-        BlockChain buf = (BlockChain)Serializer.deserialize(data);
+        BlockChain buf = (BlockChain) Serializer.deserialize(data);
         this.zerosRule = buf.zerosRule;
         this.blocks = buf.blocks;
-        
+
     }
 
-    public void addBlock(Block newBlock) {
+    public void addBlock(Block newBlock) throws IOException {
         blocks.add(newBlock);
+        saveBlockChain("blockChain");
     }
 
-    public boolean checkBlock(Block newBlock, BigInteger maxReward) throws Exception{
+    public boolean checkBlock(Block newBlock, BigInteger maxReward) throws Exception {
         //checking number of nulls
         int numOfZeros = 0;
         byte[] hash = newBlock.hash();
@@ -41,35 +44,36 @@ public class BlockChain implements Serializable{
                 }
             }
         }
-        if(numOfZeros < zerosRule)
+        if (numOfZeros < zerosRule) {
             return false;
+        }
         //checking source transactions correctness
-        for(Entry<BigInteger, Transaction> entry:newBlock.getTransactions().entrySet()){
+        for (Entry<BigInteger, Transaction> entry : newBlock.getTransactions().entrySet()) {
             //for miner transaction
-            if(entry.getKey().equals(newBlock.getLastId())){
-                if(entry.getValue().getPay().compareTo(maxReward) > 0 || !entry.getValue().getLeft().equals(BigInteger.ZERO)){
+            if (entry.getKey().equals(newBlock.getLastId())) {
+                if (entry.getValue().getPay().compareTo(maxReward) > 0 || !entry.getValue().getLeft().equals(BigInteger.ZERO)) {
                     return false;
                 }
                 continue;
             }
             Transaction checkTr = entry.getValue();
             //checking sign
-            if(!checkTr.checkSign()){
+            if (!checkTr.checkSign()) {
                 return false;
             }
             ListIterator<BigInteger> sIdsIter = checkTr.getSourceIds().listIterator();
             BigInteger hasMoney = BigInteger.ZERO;
-            while(sIdsIter.hasNext()){
+            while (sIdsIter.hasNext()) {
                 BigInteger trNum = sIdsIter.next();
                 //checking existance
                 boolean found = false;
-                if(newBlock.getTransactions().containsKey(trNum)){
-                    found  = true;
+                if (newBlock.getTransactions().containsKey(trNum)) {
+                    found = true;
                     //checking amount of money
                     Transaction t = newBlock.getTransactions().get(trNum);
-                    if(checkTr.getSenderPK().equals(t.getReceiverPK())){
+                    if (checkTr.getSenderPK().equals(t.getReceiverPK())) {
                         hasMoney = hasMoney.add(t.getPay());
-                    }else if(checkTr.getSenderPK().equals(t.getSenderPK())){
+                    } else if (checkTr.getSenderPK().equals(t.getSenderPK())) {
                         hasMoney = hasMoney.add(t.getLeft());
                     }
                 } else {
@@ -88,7 +92,7 @@ public class BlockChain implements Serializable{
                         }
                     }
                 }
-                if(!found){
+                if (!found) {
                     return false;
                 }
                 //double spending check
@@ -106,58 +110,58 @@ public class BlockChain implements Serializable{
                     }
                 }
             }
-            if(hasMoney.compareTo(checkTr.getLeft().add(checkTr.getPay())) < 0){
+            if (hasMoney.compareTo(checkTr.getLeft().add(checkTr.getPay())) < 0) {
                 return false;
             }
         }
         return true;
     }
-    
-    public BigInteger getLastId(){
+
+    public BigInteger getLastId() {
         Block lastBlock = blocks.getLast();
         BigInteger max = BigInteger.ZERO;
-        for(BigInteger id:lastBlock.getTransactions().keySet()){
-            if(id.compareTo(max) > 0){
+        for (BigInteger id : lastBlock.getTransactions().keySet()) {
+            if (id.compareTo(max) > 0) {
                 max = id;
             }
         }
         return max;
     }
-    
-    public byte[] toByteArray() throws IOException{
+
+    public byte[] toByteArray() throws IOException {
         return Serializer.serialize(this);
     }
-    
-    public BigInteger getBalance(PublicKey pk, LinkedList<BigInteger> activeIds){
+
+    public BigInteger getBalance(PublicKey pk, LinkedList<BigInteger> activeIds) {
         HashMap<BigInteger, Transaction> getTr = new HashMap<BigInteger, Transaction>();
         HashMap<BigInteger, Transaction> giveTr = new HashMap<BigInteger, Transaction>();
         ListIterator<Block> li = blocks.listIterator();
-        while(li.hasNext()){
-            for(Entry<BigInteger, Transaction> e:li.next().getTransactions().entrySet()){
-                if(e.getValue().getSenderPK().equals(pk)){
-                    if(!e.getValue().getLeft().equals(BigInteger.ZERO)){
+        while (li.hasNext()) {
+            for (Entry<BigInteger, Transaction> e : li.next().getTransactions().entrySet()) {
+                if (e.getValue().getSenderPK().equals(pk)) {
+                    if (!e.getValue().getLeft().equals(BigInteger.ZERO)) {
                         giveTr.put(e.getKey(), e.getValue());
                     }
                     ListIterator<BigInteger> sourceIdsIter = e.getValue().getSourceIds().listIterator();
-                    while(sourceIdsIter.hasNext()){
+                    while (sourceIdsIter.hasNext()) {
                         BigInteger id = sourceIdsIter.next();
-                        if(getTr.containsKey(id)){
+                        if (getTr.containsKey(id)) {
                             getTr.remove(id);
                         }
-                        if(giveTr.containsKey(id)){
+                        if (giveTr.containsKey(id)) {
                             giveTr.remove(id);
                         }
                     }
                 }
-                if(e.getValue().getReceiverPK().equals(pk)){
+                if (e.getValue().getReceiverPK().equals(pk)) {
                     getTr.put(e.getKey(), e.getValue());
                     ListIterator<BigInteger> sourceIdsIter = e.getValue().getSourceIds().listIterator();
-                    while(sourceIdsIter.hasNext()){
+                    while (sourceIdsIter.hasNext()) {
                         BigInteger id = sourceIdsIter.next();
-                        if(getTr.containsKey(id)){
+                        if (getTr.containsKey(id)) {
                             getTr.remove(id);
                         }
-                        if(giveTr.containsKey(id)){
+                        if (giveTr.containsKey(id)) {
                             giveTr.remove(id);
                         }
                     }
@@ -165,18 +169,33 @@ public class BlockChain implements Serializable{
             }
         }
         BigInteger sum = BigInteger.ZERO;
-        for(Entry<BigInteger, Transaction> e: giveTr.entrySet()){
+        for (Entry<BigInteger, Transaction> e : giveTr.entrySet()) {
             sum = sum.add(e.getValue().getLeft());
             activeIds.add(e.getKey());
         }
-        for(Entry<BigInteger, Transaction> e: getTr.entrySet()){
+        for (Entry<BigInteger, Transaction> e : getTr.entrySet()) {
             sum = sum.add(e.getValue().getPay());
             activeIds.add(e.getKey());
         }
         return sum;
     }
-    
-    public LinkedList<Block> getBlocks(){
+
+    public void saveBlockChain(String filename) throws IOException {
+        FileOutputStream fos = new FileOutputStream("blockChain");
+        fos.write(this.toByteArray());
+        fos.flush();
+        fos.close();
+    }
+
+    public static BlockChain loadBlockChain(String filename) throws IOException, ClassNotFoundException {
+        FileInputStream fis = new FileInputStream(filename);
+        byte[] byteBlockChain = new byte[fis.available()];
+        fis.read(byteBlockChain);
+        BlockChain result = (BlockChain) Serializer.deserialize(byteBlockChain);
+        return result;
+    }
+
+    public LinkedList<Block> getBlocks() {
         return blocks;
     }
 }

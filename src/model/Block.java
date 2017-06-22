@@ -8,31 +8,32 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
 
-public class Block implements Serializable{
+public class Block implements Serializable {
+
     private byte[] prevHash;
     public byte[] nonce = new byte[30];
     private HashMap<BigInteger, Transaction> transactions;
     private BigInteger lastId;
-    
-    public Block(byte[] prevHash){
+
+    public Block(byte[] prevHash) {
         transactions = new HashMap<BigInteger, Transaction>();
         lastId = BigInteger.ZERO;
         this.prevHash = prevHash;
-        
+
     }
-    
-    public Block(byte[] prevHash, BigInteger lastId){
+
+    public Block(byte[] prevHash, BigInteger lastId) {
         transactions = new HashMap<BigInteger, Transaction>();
         this.lastId = lastId;
         this.prevHash = prevHash;
     }
-    
-    public void addTransaction(Transaction transaction){
+
+    public void addTransaction(Transaction transaction) {
         lastId = lastId.add(BigInteger.ONE);
         transactions.put(lastId, transaction);
     }
-    
-    public byte[] hash() throws Exception{
+
+    public byte[] hash() throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA1");
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(byteOut);
@@ -44,7 +45,7 @@ public class Block implements Serializable{
         System.arraycopy(arrTr, 0, data, prevHash.length + nonce.length, arrTr.length);
         return digest.digest(data);
     }
-    
+
     public Block mine(int zerosRule) throws Exception {
         byte[] hash;
         Random rnd = new Random();
@@ -52,7 +53,7 @@ public class Block implements Serializable{
             int numOfZeroes = 0;
             hash = this.hash();
             for (int i = 0; i <= zerosRule / 8; i++) {
-                for (int j = 0; j < (i == zerosRule / 8? zerosRule % 8: 8); j++) {
+                for (int j = 0; j < (i == zerosRule / 8 ? zerosRule % 8 : 8); j++) {
                     if ((hash[hash.length - i - 1] & (1 << j)) == 0) {
                         numOfZeroes++;
                     }
@@ -65,29 +66,27 @@ public class Block implements Serializable{
             }
         }
     }
-    
-    public byte[] getprevHash()
-    {
+
+    public byte[] getprevHash() {
         return prevHash;
     }
-    
-    public HashMap<BigInteger, Transaction> getTransactions(){
+
+    public HashMap<BigInteger, Transaction> getTransactions() {
         return transactions;
     }
-    
-    public void setLastId(BigInteger lastId){
+
+    public void setLastId(BigInteger lastId) {
         this.lastId = lastId;
     }
-    
-    public BigInteger getLastId(){
+
+    public BigInteger getLastId() {
         return lastId;
     }
-    
-    public boolean checkPreviousHash(Block prevBlock) throws Exception
-    {
+
+    public boolean checkPreviousHash(Block prevBlock) throws Exception {
         return Arrays.equals(prevBlock.hash(), this.prevHash);
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (o == this) {
@@ -120,8 +119,12 @@ public class Block implements Serializable{
             return false;
         }
     }
-    
-    public void addMinerTransaction(BigInteger pay, PublicKey receiverPK, PrivateKey receiverSK) throws Exception{
+
+    public byte[] toByteArray() throws IOException {
+        return Serializer.serialize(this);
+    }
+
+    public void addMinerTransaction(BigInteger pay, PublicKey receiverPK, PrivateKey receiverSK) throws Exception {
         Transaction t = new Transaction(new LinkedList(), BigInteger.ZERO, pay, receiverPK, receiverPK, receiverSK);
         addTransaction(t);
     }
