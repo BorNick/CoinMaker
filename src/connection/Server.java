@@ -18,17 +18,17 @@ public class Server extends Thread {
     public boolean readyBlock;
 
     public Server(BlockChain blockChain, int port) {
-        newBlock=null;
+        newBlock = null;
         this.blockChain = blockChain;
-        this.port=port;
-        readyBlock=false;
+        this.port = port;
+        readyBlock = false;
     }
 
-    public Block getBlock()
-    {
-        readyBlock=false;
+    public Block getBlock() {
+        readyBlock = false;
         return newBlock;
     }
+
     public void run() {
         nodeOn = true;
         try {
@@ -51,7 +51,4 @@ public class Server extends Thread {
 
         }
     }
-
-
-
 }

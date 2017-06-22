@@ -1,20 +1,14 @@
 package connection;
 
-import static connection.Node.blockChain;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.Block;
-import model.BlockChain;
 import model.Serializer;
 
 class ServerSendingThread extends Thread {
@@ -47,6 +41,7 @@ class ServerSendingThread extends Thread {
                 try {
                     if (Node.blockChain.checkBlock(newBlock, BigInteger.valueOf(10)) == true) {
                         Node.blockChain.addBlock(newBlock);
+                        Node.blockChain.saveBlockChain("blockChain");
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
@@ -63,7 +58,5 @@ class ServerSendingThread extends Thread {
         } catch (InterruptedException ex) {
             Logger.getLogger(ServerSendingThread.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
-
 }

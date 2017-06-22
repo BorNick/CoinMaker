@@ -27,11 +27,6 @@ public class Transaction implements Serializable {
         this.sign = sign(privateKey);
     }
 
-    public String toString() {
-        String string = "Money left: " + left.toString() + "\nMoney paid: " + pay.toString() + "\nReceiver public key:\n" + receiverPK.toString();
-        return string;
-    }
-
     public Transaction(byte[] data) throws Exception {
         Transaction buf = (Transaction) Serializer.deserialize(data);
         this.entryIds = buf.entryIds;
@@ -135,5 +130,10 @@ public class Transaction implements Serializable {
         } else {
             return false;
         }
+    }
+
+    public String toString() {
+        String string = "Money left: " + left.toString() + "\nMoney paid: " + pay.toString() + "\nReceiver public key:\n" + receiverPK.toString();
+        return string;
     }
 }

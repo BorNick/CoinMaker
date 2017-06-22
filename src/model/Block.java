@@ -120,12 +120,12 @@ public class Block implements Serializable {
         }
     }
 
-    public byte[] toByteArray() throws IOException {
-        return Serializer.serialize(this);
-    }
-
     public void addMinerTransaction(BigInteger pay, PublicKey receiverPK, PrivateKey receiverSK) throws Exception {
         Transaction t = new Transaction(new LinkedList(), BigInteger.ZERO, pay, receiverPK, receiverPK, receiverSK);
         addTransaction(t);
+    }
+
+    public byte[] toByteArray() throws IOException {
+        return Serializer.serialize(this);
     }
 }

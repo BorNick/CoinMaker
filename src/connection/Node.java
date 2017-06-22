@@ -36,7 +36,7 @@ public class Node extends Thread {
 
     }
 
-    public void initNode() throws Exception {
+    public static void initNode() throws Exception {
         KeyPairGenerator senderKeyGen = KeyPairGenerator.getInstance("DSA");
         senderKeyGen.initialize(1024);
         //https://docs.oracle.com/javase/tutorial/security/apisign/vstep2.html
@@ -72,6 +72,7 @@ public class Node extends Thread {
                 try {
                     if (blockChain.checkBlock(newBlock, BigInteger.valueOf(10)) == true) {
                         blockChain.addBlock(newBlock);
+                        blockChain.saveBlockChain("blockChain");
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(Node.class.getName()).log(Level.SEVERE, null, ex);
@@ -110,6 +111,7 @@ public class Node extends Thread {
             block.addMinerTransaction(BigInteger.valueOf(sysScanner.nextInt()), pK, sK);
             Block newBlock = block.mine(5);
             blockChain.addBlock(newBlock);
+            blockChain.saveBlockChain("blockChain");
             System.out.println("Transaction was succesfully created");
             sendBlockToUsers("addresses.txt", newBlock);
         }
@@ -178,7 +180,7 @@ public class Node extends Thread {
         dIn.read(message);
         //System.out.println(message.length);
         BlockChain bc = (BlockChain) Serializer.deserialize(message);
-        extendBlockChain(blockChain,bc, BigInteger.valueOf(10));
+        extendBlockChain(blockChain, bc, BigInteger.valueOf(10));
         //System.out.println(extendBlockChain(blockChain,bc, BigInteger.valueOf(10)));
         bc.saveBlockChain("blockChain");
         return bc;

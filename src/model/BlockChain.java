@@ -28,9 +28,8 @@ public class BlockChain implements Serializable {
 
     }
 
-    public void addBlock(Block newBlock) throws IOException {
+    public void addBlock(Block newBlock) {
         blocks.add(newBlock);
-        saveBlockChain("blockChain");
     }
 
     public boolean checkBlock(Block newBlock, BigInteger maxReward) throws Exception {
@@ -180,6 +179,10 @@ public class BlockChain implements Serializable {
         return sum;
     }
 
+    public LinkedList<Block> getBlocks() {
+        return blocks;
+    }
+
     public void saveBlockChain(String filename) throws IOException {
         FileOutputStream fos = new FileOutputStream("blockChain");
         fos.write(this.toByteArray());
@@ -193,9 +196,5 @@ public class BlockChain implements Serializable {
         fis.read(byteBlockChain);
         BlockChain result = (BlockChain) Serializer.deserialize(byteBlockChain);
         return result;
-    }
-
-    public LinkedList<Block> getBlocks() {
-        return blocks;
     }
 }
